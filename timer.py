@@ -178,7 +178,7 @@ start = False
 a_pressed = False
 b_pressed = False
 c_pressed = False
-d_pressed = False
+d_pressed = True
 
 
 # Check whether the RTC time has changed and if so redraw the display
@@ -236,8 +236,7 @@ def redraw_display_if_reqd():
     
     lock.acquire()
         
-    if a_pressed or first:
-        first = False
+    if a_pressed:
         if tens > 0 and tens % 10 == 0:
             second += 1
             tens = 0
@@ -300,7 +299,8 @@ def redraw_display_if_reqd():
 
         outline_text(timer, x, y)
         
-    elif d_pressed:
+    elif d_pressed or first:
+        first = False
         global year_clock, month_clock, day_clock, wd_clock, hour_clock, minute_clock, second_clock, last_second
 
         year_clock, month_clock, day_clock, wd_clock, hour_clock, minute_clock, second_clock, _ = rtc.datetime()
