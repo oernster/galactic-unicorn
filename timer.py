@@ -1,5 +1,3 @@
-# Timer authored by Oliver Ernster.  Clock code taken from original examples and modded.
-#
 # Create a secrets.py with your Wifi details to be able to get the time
 # when the Galactic Unicorn isn't connected to Thonny.
 #
@@ -200,7 +198,7 @@ def redraw_display_if_reqd():
         if minute > 0 and minute % 60 == 0:
             hour += 1
             minute = 0
-        timer = "{:02}:{:02}:{:02}::{:01}".format(hour, minute, second, tens)
+        timer = "{:02}:{:02}:{:02}:{:01}".format(hour, minute, second, tens)
         percent_to_midday = 50
         hue = ((MIDDAY_HUE - MIDNIGHT_HUE) * percent_to_midday) + MIDNIGHT_HUE
         sat = ((MIDDAY_SATURATION - MIDNIGHT_SATURATION) * percent_to_midday) + MIDNIGHT_SATURATION
@@ -218,7 +216,7 @@ def redraw_display_if_reqd():
         if start:
             tens += 1
     elif c_pressed:
-        timer = "{:02}:{:02}:{:02}::{:01}".format(stored_hour, stored_minute, stored_second, stored_tens)
+        timer = "{:02}:{:02}:{:02}:{:01}".format(stored_hour, stored_minute, stored_second, stored_tens)
         percent_to_midday = 50
         hue = ((MIDDAY_HUE - MIDNIGHT_HUE) * percent_to_midday) + MIDNIGHT_HUE
         sat = ((MIDDAY_SATURATION - MIDNIGHT_SATURATION) * percent_to_midday) + MIDNIGHT_SATURATION
@@ -312,4 +310,3 @@ while True:
     gu.update(graphics)
 
     time.sleep(0.01)
-
