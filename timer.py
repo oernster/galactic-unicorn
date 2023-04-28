@@ -15,6 +15,7 @@ import ntptime
 from galactic import GalacticUnicorn
 from picographics import PicoGraphics, DISPLAY_GALACTIC_UNICORN as DISPLAY
 
+
 try:
     from secrets import WIFI_SSID, WIFI_PASSWORD
     wifi_available = True
@@ -46,11 +47,6 @@ height = GalacticUnicorn.HEIGHT
 # set up some pens to use later
 WHITE = graphics.create_pen(255, 255, 255)
 BLACK = graphics.create_pen(0, 0, 0)
-
-start = False
-a_pressed = True
-c_pressed = False
-d_pressed = False
 
 @micropython.native  # noqa: F821
 def from_hsv(h, s, v):
@@ -175,17 +171,62 @@ stored_tens = 0
 stored_second = second
 stored_minute = minute
 stored_hour = hour
+first = True
+start = False
+a_pressed = False
+b_pressed = False
+c_pressed = False
+d_pressed = False
+
 
 # Check whether the RTC time has changed and if so redraw the display
 def redraw_display_if_reqd():
-    global hour, minute, second, tens, stored_hour, stored_minute, stored_second, stored_tens, a_pressed, c_pressed, d_pressed
+    global start, first, hour, minute, second, tens, stored_hour, stored_minute, stored_second, stored_tens, a_pressed, b_pressed, c_pressed, d_pressed
     
+    if gu.is_pressed(GalacticUnicorn.SWITCH_BRIGHTNESS_UP):
+        gu.adjust_brightness(+0.01)
+    elif gu.is_pressed(GalacticUnicorn.SWITCH_BRIGHTNESS_DOWN):
+        gu.adjust_brightness(-0.01)
+    elif gu.is_pressed(GalacticUnicorn.SWITCH_A):
+        tens = 0
+        second = 0
+        minute = 0
+        hour = 0
+        start = True
+        a_pressed = True
+        b_pressed = False
+        c_pressed = False
+        d_pressed = False
+    elif gu.is_pressed(GalacticUnicorn.SWITCH_B):
+        start = False
+        stored_tens = tens
+        stored_second = second
+        stored_minute = minute
+        stored_hour = hour
+        a_pressed = False
+        b_pressed = True
+        c_pressed = False
+        d_pressed = False
+    elif gu.is_pressed(GalacticUnicorn.SWITCH_C):
+        start = False
+        a_pressed = False
+        b_pressed = False
+        c_pressed = True
+        d_pressed = False
+    elif gu.is_pressed(GalacticUnicorn.SWITCH_D):
+        start = False
+        a_pressed = False
+        b_pressed = False
+        c_pressed = False
+        d_pressed = True
+    
+    time.sleep(0.01)
+        
     # update the display
     gu.update(graphics)
-
-    time.sleep(0.01)
     
-    if a_pressed:
+    if a_pressed or first:
+        first = False
         if tens > 0 and tens % 10 == 0:
             second += 1
             tens = 0
@@ -215,6 +256,22 @@ def redraw_display_if_reqd():
         outline_text(timer, x, y)
         if start:
             tens += 1
+    elif b_pressed:
+        timer = "{:02}:{:02}:{:02}:{:01}".format(hour, minute, second, tens)
+        percent_to_midday = 50
+        hue = ((MIDDAY_HUE - MIDNIGHT_HUE) * percent_to_midday) + MIDNIGHT_HUE
+        sat = ((MIDDAY_SATURATION - MIDNIGHT_SATURATION) * percent_to_midday) + MIDNIGHT_SATURATION
+        val = ((MIDDAY_VALUE - MIDNIGHT_VALUE) * percent_to_midday) + MIDNIGHT_VALUE
+
+        gradient_background(hue, sat, val,
+                            hue + HUE_OFFSET, sat, val)
+
+        # calculate text position so that it is centred
+        w = graphics.measure_text(timer, 1)
+        x = int(width / 2 - w / 2 + 1)
+        y = 2
+
+        outline_text(timer, x, y)
     elif c_pressed:
         timer = "{:02}:{:02}:{:02}:{:01}".format(stored_hour, stored_minute, stored_second, stored_tens)
         percent_to_midday = 50
@@ -231,8 +288,7 @@ def redraw_display_if_reqd():
         y = 2
 
         outline_text(timer, x, y)
-        if start:
-            tens += 1
+        
     elif d_pressed:
         global year_clock, month_clock, day_clock, wd_clock, hour_clock, minute_clock, second_clock, last_second
 
@@ -270,43 +326,4 @@ sync_timer()
 def interruption_handler(timer):
     redraw_display_if_reqd()
 
-soft_timer = Timer(mode=Timer.PERIODIC, period=100, callback=interruption_handler)    
-
-while True:
-    if gu.is_pressed(GalacticUnicorn.SWITCH_BRIGHTNESS_UP):
-        gu.adjust_brightness(+0.01)
-    elif gu.is_pressed(GalacticUnicorn.SWITCH_BRIGHTNESS_DOWN):
-        gu.adjust_brightness(-0.01)
-    elif gu.is_pressed(GalacticUnicorn.SWITCH_A):
-        tens = 0
-        second = 0
-        minute = 0
-        hour = 0
-        start = True
-        a_pressed = True
-        c_pressed = False
-        d_pressed = False
-    elif gu.is_pressed(GalacticUnicorn.SWITCH_B):
-        start = False
-        stored_tens = tens
-        stored_second = second
-        stored_minute = minute
-        stored_hour = hour
-        a_pressed = False
-        c_pressed = False
-        d_pressed = False
-    elif gu.is_pressed(GalacticUnicorn.SWITCH_C):
-        start = False
-        a_pressed = False
-        c_pressed = True
-        d_pressed = False
-    elif gu.is_pressed(GalacticUnicorn.SWITCH_D):
-        start = False
-        a_pressed = False
-        c_pressed = False
-        d_pressed = True
-        
-    # update the display
-    gu.update(graphics)
-
-    time.sleep(0.01)
+soft_timer = Timer(mode=Timer.PERIODIC, period=100, callback=interruption_handler)        
