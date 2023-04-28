@@ -5,7 +5,7 @@
 # WIFI_SSID = "Your WiFi SSID"
 # WIFI_PASSWORD = "Your WiFi password"
 #
-
+import _thread
 import time
 import math
 import machine
@@ -22,6 +22,8 @@ try:
 except ImportError:
     print("Create secrets.py with your WiFi credentials to get time from NTP")
     wifi_available = False
+
+lock = _thread.allocate_lock()
 
 # constants for controlling the background colour throughout the day
 MIDDAY_HUE = 1.1
@@ -121,7 +123,7 @@ def sync_timer():
             break
         max_wait -= 1
         print('waiting for connection...')
-        time.sleep(2)
+        time.sleep(0.2)
     
         redraw_display_if_reqd()
         gu.update(graphics)
@@ -182,12 +184,12 @@ d_pressed = False
 # Check whether the RTC time has changed and if so redraw the display
 def redraw_display_if_reqd():
     global start, first, hour, minute, second, tens, stored_hour, stored_minute, stored_second, stored_tens, a_pressed, b_pressed, c_pressed, d_pressed
-    
     if gu.is_pressed(GalacticUnicorn.SWITCH_BRIGHTNESS_UP):
         gu.adjust_brightness(+0.01)
     elif gu.is_pressed(GalacticUnicorn.SWITCH_BRIGHTNESS_DOWN):
         gu.adjust_brightness(-0.01)
     elif gu.is_pressed(GalacticUnicorn.SWITCH_A):
+        lock.acquire()
         tens = 0
         second = 0
         minute = 0
@@ -197,7 +199,9 @@ def redraw_display_if_reqd():
         b_pressed = False
         c_pressed = False
         d_pressed = False
+        lock.release()
     elif gu.is_pressed(GalacticUnicorn.SWITCH_B):
+        lock.acquire()
         start = False
         stored_tens = tens
         stored_second = second
@@ -207,24 +211,31 @@ def redraw_display_if_reqd():
         b_pressed = True
         c_pressed = False
         d_pressed = False
+        lock.release()
     elif gu.is_pressed(GalacticUnicorn.SWITCH_C):
+        lock.acquire()
         start = False
         a_pressed = False
         b_pressed = False
         c_pressed = True
         d_pressed = False
+        lock.release()
     elif gu.is_pressed(GalacticUnicorn.SWITCH_D):
+        lock.acquire()
         start = False
         a_pressed = False
         b_pressed = False
         c_pressed = False
         d_pressed = True
+        lock.release()
     
     time.sleep(0.01)
         
     # update the display
     gu.update(graphics)
     
+    lock.acquire()
+        
     if a_pressed or first:
         first = False
         if tens > 0 and tens % 10 == 0:
@@ -316,7 +327,7 @@ def redraw_display_if_reqd():
             outline_text(clock, x, y)
 
             last_second = second
-            
+    lock.release()
 # set the font
 graphics.set_font("bitmap8")
 gu.set_brightness(0.5)
@@ -327,3 +338,58 @@ def interruption_handler(timer):
     redraw_display_if_reqd()
 
 soft_timer = Timer(mode=Timer.PERIODIC, period=100, callback=interruption_handler)        
+
+def console_handler():
+    global start, hour, minute, second, tens, stored_hour, stored_minute, stored_second, stored_tens, a_pressed, b_pressed, c_pressed, d_pressed
+    ci = input("Enter a command:")
+    lock.acquire()
+    if ci.lower() == 'a':
+        tens = 0
+        second = 0
+        minute = 0
+        hour = 0
+        start = True
+        a_pressed = True
+        b_pressed = False
+        c_pressed = False
+        d_pressed = False
+    elif ci.lower() == 'b':
+        start = False
+        stored_tens = tens
+        stored_second = second
+        stored_minute = minute
+        stored_hour = hour
+        a_pressed = False
+        b_pressed = True
+        c_pressed = False
+        d_pressed = False
+    elif ci.lower() == 'c':
+        start = False
+        a_pressed = False
+        b_pressed = False
+        c_pressed = True
+        d_pressed = False
+    elif ci.lower() == 'd':
+        start = False
+        a_pressed = False
+        b_pressed = False
+        c_pressed = False
+        d_pressed = True
+    elif ci.lower() == 'r':
+        tens = 0
+        second = 0
+        minute = 0
+        hour = 0
+        start = False
+        a_pressed = True
+        b_pressed = False
+        c_pressed = False
+        d_pressed = False
+    else:
+        print("Invalid command!")
+    lock.release()
+    print("Actioned")
+    time.sleep(0.01)
+
+while True:
+    console_handler()
