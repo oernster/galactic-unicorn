@@ -1,3 +1,5 @@
+# Timer authored by Oliver Ernster.  Clock code taken from original examples and modded.
+#
 # Create a secrets.py with your Wifi details to be able to get the time
 # when the Galactic Unicorn isn't connected to Thonny.
 #
@@ -167,28 +169,28 @@ down_button = machine.Pin(GalacticUnicorn.SWITCH_VOLUME_DOWN, machine.Pin.IN, ma
 
 year_clock, month_clock, day_clock, wd_clock, hour_clock, minute_clock, second_clock, last_second = rtc.datetime()
 
-hundreds = 0
+tens = 0
 second = 0
 minute = 0
 hour = 0
-stored_hundreds = 0
+stored_tens = 0
 stored_second = second
 stored_minute = minute
 stored_hour = hour
 
 # Check whether the RTC time has changed and if so redraw the display
 def redraw_display_if_reqd():
-    global hour, minute, second, hundreds, stored_hour, stored_minute, stored_second, stored_hundreds, a_pressed, c_pressed, d_pressed
+    global hour, minute, second, tens, stored_hour, stored_minute, stored_second, stored_tens, a_pressed, c_pressed, d_pressed
     
     # update the display
     gu.update(graphics)
 
-    time.sleep(0.001)
+    time.sleep(0.01)
     
     if a_pressed:
-        if hundreds > 0 and hundreds % 100 == 0:
+        if tens > 0 and tens % 10 == 0:
             second += 1
-            hundreds = 0
+            tens = 0
         if second > 0 and second % 60 == 0:
             minute += 1
             second = 0
@@ -198,7 +200,7 @@ def redraw_display_if_reqd():
         if minute > 0 and minute % 60 == 0:
             hour += 1
             minute = 0
-        timer = "{:02}:{:02}:{:02}".format(hour, minute, second, hundreds)
+        timer = "{:02}:{:02}:{:02}::{:01}".format(hour, minute, second, tens)
         percent_to_midday = 50
         hue = ((MIDDAY_HUE - MIDNIGHT_HUE) * percent_to_midday) + MIDNIGHT_HUE
         sat = ((MIDDAY_SATURATION - MIDNIGHT_SATURATION) * percent_to_midday) + MIDNIGHT_SATURATION
@@ -214,9 +216,9 @@ def redraw_display_if_reqd():
 
         outline_text(timer, x, y)
         if start:
-            hundreds += 1
+            tens += 1
     elif c_pressed:
-        timer = "{:02}:{:02}:{:02}::{:02}".format(stored_hour, stored_minute, stored_second, stored_hundreds)
+        timer = "{:02}:{:02}:{:02}::{:01}".format(stored_hour, stored_minute, stored_second, stored_tens)
         percent_to_midday = 50
         hue = ((MIDDAY_HUE - MIDNIGHT_HUE) * percent_to_midday) + MIDNIGHT_HUE
         sat = ((MIDDAY_SATURATION - MIDNIGHT_SATURATION) * percent_to_midday) + MIDNIGHT_SATURATION
@@ -232,7 +234,7 @@ def redraw_display_if_reqd():
 
         outline_text(timer, x, y)
         if start:
-            hundreds += 1
+            tens += 1
     elif d_pressed:
         global year_clock, month_clock, day_clock, wd_clock, hour_clock, minute_clock, second_clock, last_second
 
@@ -270,7 +272,7 @@ sync_timer()
 def interruption_handler(timer):
     redraw_display_if_reqd()
 
-soft_timer = Timer(mode=Timer.PERIODIC, period=10, callback=interruption_handler)    
+soft_timer = Timer(mode=Timer.PERIODIC, period=100, callback=interruption_handler)    
 
 while True:
     if gu.is_pressed(GalacticUnicorn.SWITCH_BRIGHTNESS_UP):
@@ -278,7 +280,7 @@ while True:
     elif gu.is_pressed(GalacticUnicorn.SWITCH_BRIGHTNESS_DOWN):
         gu.adjust_brightness(-0.01)
     elif gu.is_pressed(GalacticUnicorn.SWITCH_A):
-        hundreds = 0
+        tens = 0
         second = 0
         minute = 0
         hour = 0
@@ -288,7 +290,7 @@ while True:
         d_pressed = False
     elif gu.is_pressed(GalacticUnicorn.SWITCH_B):
         start = False
-        stored_hundreds = hundreds
+        stored_tens = tens
         stored_second = second
         stored_minute = minute
         stored_hour = hour
@@ -309,4 +311,5 @@ while True:
     # update the display
     gu.update(graphics)
 
-    time.sleep(0.005)
+    time.sleep(0.01)
+
