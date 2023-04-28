@@ -341,6 +341,12 @@ soft_timer = Timer(mode=Timer.PERIODIC, period=100, callback=interruption_handle
 
 def console_handler():
     global start, hour, minute, second, tens, stored_hour, stored_minute, stored_second, stored_tens, a_pressed, b_pressed, c_pressed, d_pressed
+    print("Command options...")
+    print("A) Start timer.")
+    print("B) Stop timer.")
+    print("C) Recall last stopped timer.")
+    print("D) Display real time clock.")
+    print("R) Reset timer to zero.")
     ci = input("Enter a command:")
     lock.acquire()
     if ci.lower() == 'a':
