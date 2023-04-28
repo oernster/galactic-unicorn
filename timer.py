@@ -388,7 +388,6 @@ def console_handler():
     else:
         print("Invalid command!")
     lock.release()
-    print("Actioned")
     time.sleep(0.01)
 
 while True:
