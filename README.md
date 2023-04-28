@@ -2,7 +2,7 @@
 Galactic Unicorn code
 
 ## timer.py
-Buttons on the Galactic Unicorn itself...
+Button controls on the Galactic Unicorn itself...
 
 A) Reset and start timer.
 
