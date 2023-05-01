@@ -12,10 +12,8 @@ C) If you have pressed (B) it will show the stored time, otherwise it will defau
 
 ...where hh = hours, mm = minutes, ss = seconds, d = tenths of a second.
 
-D) Show the clock.
-
 Commands available on the console...
 
-'A' through 'D' as above for the GU buttons.
+'A' through 'C' as above for the GU buttons.
 
 R) Reset timer to zero but do not start it.
