@@ -6,6 +6,7 @@
 # WIFI_PASSWORD = "Your WiFi password"
 #
 import _thread
+import random
 import time
 import math
 import machine
@@ -49,6 +50,8 @@ height = GalacticUnicorn.HEIGHT
 # set up some pens to use later
 WHITE = graphics.create_pen(255, 255, 255)
 BLACK = graphics.create_pen(0, 0, 0)
+
+gu.set_brightness(0.5)
 
 @micropython.native  # noqa: F821
 def from_hsv(h, s, v):
@@ -150,21 +153,6 @@ utc_offset = 0
 up_button = machine.Pin(GalacticUnicorn.SWITCH_VOLUME_UP, machine.Pin.IN, machine.Pin.PULL_UP)
 down_button = machine.Pin(GalacticUnicorn.SWITCH_VOLUME_DOWN, machine.Pin.IN, machine.Pin.PULL_UP)
 
-def adjust_utc_offset(pin):
-    global utc_offset
-    if pin == up_button:
-        utc_offset += 1
-    if pin == down_button:
-        utc_offset -= 1
-
-up_button.irq(trigger=machine.Pin.IRQ_FALLING, handler=adjust_utc_offset)
-down_button.irq(trigger=machine.Pin.IRQ_FALLING, handler=adjust_utc_offset)
-
-up_button = machine.Pin(GalacticUnicorn.SWITCH_VOLUME_UP, machine.Pin.IN, machine.Pin.PULL_UP)
-down_button = machine.Pin(GalacticUnicorn.SWITCH_VOLUME_DOWN, machine.Pin.IN, machine.Pin.PULL_UP)
-
-year_clock, month_clock, day_clock, wd_clock, hour_clock, minute_clock, second_clock, last_second = rtc.datetime()
-
 tens = 0
 second = 0
 minute = 0
@@ -178,12 +166,11 @@ start = False
 a_pressed = False
 b_pressed = False
 c_pressed = False
-d_pressed = True
 
 
 # Check whether the RTC time has changed and if so redraw the display
 def redraw_display_if_reqd():
-    global start, first, hour, minute, second, tens, stored_hour, stored_minute, stored_second, stored_tens, a_pressed, b_pressed, c_pressed, d_pressed
+    global landscape, start, first, hour, minute, second, tens, stored_hour, stored_minute, stored_second, stored_tens, a_pressed, b_pressed, c_pressed
     if gu.is_pressed(GalacticUnicorn.SWITCH_BRIGHTNESS_UP):
         gu.adjust_brightness(+0.01)
     elif gu.is_pressed(GalacticUnicorn.SWITCH_BRIGHTNESS_DOWN):
@@ -198,7 +185,6 @@ def redraw_display_if_reqd():
         a_pressed = True
         b_pressed = False
         c_pressed = False
-        d_pressed = False
         lock.release()
     elif gu.is_pressed(GalacticUnicorn.SWITCH_B):
         lock.acquire()
@@ -210,7 +196,6 @@ def redraw_display_if_reqd():
         a_pressed = False
         b_pressed = True
         c_pressed = False
-        d_pressed = False
         lock.release()
     elif gu.is_pressed(GalacticUnicorn.SWITCH_C):
         lock.acquire()
@@ -218,7 +203,6 @@ def redraw_display_if_reqd():
         a_pressed = False
         b_pressed = False
         c_pressed = True
-        d_pressed = False
         lock.release()
     elif gu.is_pressed(GalacticUnicorn.SWITCH_D):
         lock.acquire()
@@ -299,35 +283,8 @@ def redraw_display_if_reqd():
 
         outline_text(timer, x, y)
         
-    elif d_pressed or first:
-        first = False
-        global year_clock, month_clock, day_clock, wd_clock, hour_clock, minute_clock, second_clock, last_second
-
-        year_clock, month_clock, day_clock, wd_clock, hour_clock, minute_clock, second_clock, _ = rtc.datetime()
-        if second_clock != last_second:
-            hour_clock = (hour_clock + utc_offset) % 24
-            time_through_day = (((hour_clock * 60) + minute_clock) * 60) + second_clock
-            percent_through_day = time_through_day / 86400
-            percent_to_midday = 1.0 - ((math.cos(percent_through_day * math.pi * 2) + 1) / 2)
-
-            hue = ((MIDDAY_HUE - MIDNIGHT_HUE) * percent_to_midday) + MIDNIGHT_HUE
-            sat = ((MIDDAY_SATURATION - MIDNIGHT_SATURATION) * percent_to_midday) + MIDNIGHT_SATURATION
-            val = ((MIDDAY_VALUE - MIDNIGHT_VALUE) * percent_to_midday) + MIDNIGHT_VALUE
-
-            gradient_background(hue, sat, val,
-                                hue + HUE_OFFSET, sat, val)
-
-            clock = "{:02}:{:02}:{:02}".format(hour_clock, minute_clock, second_clock)
-
-            # calculate text position so that it is centred
-            w = graphics.measure_text(clock, 1)
-            x = int(width / 2 - w / 2 + 1)
-            y = 2
-
-            outline_text(clock, x, y)
-
-            last_second = second
     lock.release()
+    
 # set the font
 graphics.set_font("bitmap8")
 gu.set_brightness(0.5)
@@ -340,12 +297,11 @@ def interruption_handler(timer):
 soft_timer = Timer(mode=Timer.PERIODIC, period=100, callback=interruption_handler)        
 
 def console_handler():
-    global start, hour, minute, second, tens, stored_hour, stored_minute, stored_second, stored_tens, a_pressed, b_pressed, c_pressed, d_pressed
+    global start, hour, minute, second, tens, stored_hour, stored_minute, stored_second, stored_tens, a_pressed, b_pressed, c_pressed
     print("Command options...")
     print("A) Start timer.")
     print("B) Stop timer.")
     print("C) Recall last stopped timer.")
-    print("D) Display real time clock.")
     print("R) Reset timer to zero.")
     ci = input("Enter a command:")
     lock.acquire()
@@ -358,7 +314,6 @@ def console_handler():
         a_pressed = True
         b_pressed = False
         c_pressed = False
-        d_pressed = False
     elif ci.lower() == 'b':
         start = False
         stored_tens = tens
@@ -368,19 +323,13 @@ def console_handler():
         a_pressed = False
         b_pressed = True
         c_pressed = False
-        d_pressed = False
     elif ci.lower() == 'c':
         start = False
         a_pressed = False
         b_pressed = False
         c_pressed = True
-        d_pressed = False
     elif ci.lower() == 'd':
-        start = False
-        a_pressed = False
-        b_pressed = False
-        c_pressed = False
-        d_pressed = True
+        pass
     elif ci.lower() == 'r':
         tens = 0
         second = 0
@@ -390,7 +339,6 @@ def console_handler():
         a_pressed = True
         b_pressed = False
         c_pressed = False
-        d_pressed = False
     else:
         print("Invalid command!")
     lock.release()
