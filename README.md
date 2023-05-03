@@ -10,10 +10,12 @@ B) Stop timer and store current time.
 
 C) If you have pressed (B) it will show the stored time, otherwise it will default to hh:mm:ss::d and show that.
 
+D) Show clock.
+
 ...where hh = hours, mm = minutes, ss = seconds, d = tenths of a second.
 
 Commands available on the console...
 
-'A' through 'C' as above for the GU buttons.
+'A' through 'D' as above for the GU buttons.
 
 R) Reset timer to zero but do not start it.
