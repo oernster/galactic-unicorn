@@ -340,7 +340,6 @@ clk = None
 def console_handler():
     global first, soft_timer, clk, start, hour, minute, second, tens, stored_hour, stored_minute, stored_second, stored_tens, a_pressed, b_pressed, c_pressed
     if first:
-        print("First")
         first = False
         if not clk:
             clk = Timer(mode=Timer.PERIODIC, period=100, callback=clk_interruption_handler)
