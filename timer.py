@@ -163,10 +163,9 @@ stored_minute = minute
 stored_hour = hour
 first = True
 start = False
-a_pressed = False
+a_pressed = True
 b_pressed = False
 c_pressed = False
-
 
 # Check whether the RTC time has changed and if so redraw the display
 def redraw_display_if_reqd():
