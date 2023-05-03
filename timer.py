@@ -163,9 +163,16 @@ stored_minute = minute
 stored_hour = hour
 first = True
 start = False
-a_pressed = True
+a_pressed = False
 b_pressed = False
 c_pressed = False
+d_pressed = True
+
+year_clk, month_clk, day_clk, wd_clk, hour_clk, minute_clk, second_clk, _ = rtc.datetime()
+
+last_second = second
+last_second_clk = second_clk
+
 
 # Check whether the RTC time has changed and if so redraw the display
 def redraw_display_if_reqd():
@@ -283,7 +290,36 @@ def redraw_display_if_reqd():
         outline_text(timer, x, y)
         
     lock.release()
+
+# Check whether the RTC time has changed and if so redraw the display
+def redraw_clk_display_if_reqd():
+    global year_clk, month_clk, day_clk, wd_clk, hour_clk, minute_clk, second_clk, last_second_clk
     
+    year_clk, month_clk, day_clk, wd_clk, hour_clk, minute_clk, second_clk, _ = rtc.datetime()
+    if second_clk != last_second_clk:
+        hour_clk = (hour_clk + utc_offset) % 24
+        time_through_day = (((hour_clk * 60) + minute_clk) * 60) + second_clk
+        percent_through_day = time_through_day / 86400
+        percent_to_midday = 1.0 - ((math.cos(percent_through_day * math.pi * 2) + 1) / 2)
+
+        hue = ((MIDDAY_HUE - MIDNIGHT_HUE) * percent_to_midday) + MIDNIGHT_HUE
+        sat = ((MIDDAY_SATURATION - MIDNIGHT_SATURATION) * percent_to_midday) + MIDNIGHT_SATURATION
+        val = ((MIDDAY_VALUE - MIDNIGHT_VALUE) * percent_to_midday) + MIDNIGHT_VALUE
+
+        gradient_background(hue, sat, val,
+                            hue + HUE_OFFSET, sat, val)
+
+        clock = "{:02}:{:02}:{:02}".format(hour_clk, minute_clk, second_clk)
+
+        # calculate text position so that it is centred
+        w = graphics.measure_text(clock, 1)
+        x = int(width / 2 - w / 2 + 1)
+        y = 2
+
+        outline_text(clock, x, y)
+        gu.update(graphics)
+        last_second_clk = second_clk
+
 # set the font
 graphics.set_font("bitmap8")
 gu.set_brightness(0.5)
@@ -293,14 +329,26 @@ sync_timer()
 def interruption_handler(timer):
     redraw_display_if_reqd()
 
-soft_timer = Timer(mode=Timer.PERIODIC, period=100, callback=interruption_handler)        
+def clk_interruption_handler(timer):
+    redraw_clk_display_if_reqd()
+
+
+soft_timer = None        
+
+clk = None
 
 def console_handler():
-    global start, hour, minute, second, tens, stored_hour, stored_minute, stored_second, stored_tens, a_pressed, b_pressed, c_pressed
+    global first, soft_timer, clk, start, hour, minute, second, tens, stored_hour, stored_minute, stored_second, stored_tens, a_pressed, b_pressed, c_pressed
+    if first:
+        print("First")
+        first = False
+        if not clk:
+            clk = Timer(mode=Timer.PERIODIC, period=100, callback=clk_interruption_handler)
     print("Command options...")
     print("A) Start timer.")
     print("B) Stop timer.")
     print("C) Recall last stopped timer.")
+    print("D) Clock.")
     print("R) Reset timer to zero.")
     ci = input("Enter a command:")
     lock.acquire()
@@ -313,6 +361,7 @@ def console_handler():
         a_pressed = True
         b_pressed = False
         c_pressed = False
+        d_pressed = False
     elif ci.lower() == 'b':
         start = False
         stored_tens = tens
@@ -322,14 +371,26 @@ def console_handler():
         a_pressed = False
         b_pressed = True
         c_pressed = False
+        d_pressed = False
     elif ci.lower() == 'c':
         start = False
         a_pressed = False
         b_pressed = False
         c_pressed = True
+        d_pressed = False
     elif ci.lower() == 'd':
-        pass
+        a_pressed = False
+        b_pressed = False
+        c_pressed = False
+        d_pressed = True
+        start = False
+        if soft_timer:
+            soft_timer.deinit()
+            clk = Timer(mode=Timer.PERIODIC, period=100, callback=clk_interruption_handler)
+        # update the display
+        gu.update(graphics)
     elif ci.lower() == 'r':
+        print("R pressed.")
         tens = 0
         second = 0
         minute = 0
@@ -338,6 +399,11 @@ def console_handler():
         a_pressed = True
         b_pressed = False
         c_pressed = False
+        d_pressed = False
+        if clk:
+            clk.deinit()
+            soft_timer = Timer(mode=Timer.PERIODIC, period=100, callback=interruption_handler)
+        gu.update(graphics)
     else:
         print("Invalid command!")
     lock.release()
