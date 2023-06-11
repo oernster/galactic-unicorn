@@ -153,6 +153,16 @@ utc_offset = 0
 up_button = machine.Pin(GalacticUnicorn.SWITCH_VOLUME_UP, machine.Pin.IN, machine.Pin.PULL_UP)
 down_button = machine.Pin(GalacticUnicorn.SWITCH_VOLUME_DOWN, machine.Pin.IN, machine.Pin.PULL_UP)
 
+def adjust_utc_offset(pin):
+    global utc_offset
+    if pin == up_button:
+        utc_offset += 1
+    if pin == down_button:
+        utc_offset -= 1
+
+up_button.irq(trigger=machine.Pin.IRQ_FALLING, handler=adjust_utc_offset)
+down_button.irq(trigger=machine.Pin.IRQ_FALLING, handler=adjust_utc_offset)
+
 tens = 0
 second = 0
 minute = 0
